@@ -1,0 +1,174 @@
+VERILOG CODE :-
+
+module spi_master (
+    input clk,
+    input rst,
+    input start,
+    input [7:0] data_in,
+
+    output reg sclk,
+    output reg mosi,
+    output reg cs,
+    output reg busy
+);
+
+reg [7:0] shift_reg;
+reg [2:0] bit_count;
+
+always @(posedge clk) begin
+
+    if(rst) begin
+        sclk <= 0;
+        cs <= 1;
+        busy <= 0;
+        bit_count <= 0;
+        mosi <= 0;
+    end
+
+    else begin
+
+        if(start && !busy) begin
+
+            busy <= 1;
+            cs <= 0;
+            shift_reg <= data_in;
+            bit_count <= 7;
+
+        end
+
+        else if(busy) begin
+
+            sclk <= ~sclk;
+
+            if(sclk == 0) begin
+
+                mosi <= shift_reg[7];
+
+                shift_reg <= shift_reg << 1;
+
+                if(bit_count == 0) begin
+                    busy <= 0;
+                    cs <= 1;
+                    sclk <= 0;
+                end
+                else
+                    bit_count <= bit_count - 1;
+
+            end
+
+        end
+
+    end
+
+end
+
+endmodule
+
+
+
+
+TESTBENCH:-
+
+`timescale 1ns/1ps
+
+module spi_master_tb;
+
+reg clk;
+reg rst;
+reg start;
+reg [7:0] data_in;
+
+wire sclk;
+wire mosi;
+wire cs;
+wire busy;
+
+spi_master uut(
+    .clk(clk),
+    .rst(rst),
+    .start(start),
+    .data_in(data_in),
+    .sclk(sclk),
+    .mosi(mosi),
+    .cs(cs),
+    .busy(busy)
+);
+
+// Generate VCD
+initial begin
+    $dumpfile("spi_master.vcd");
+    $dumpvars(0, spi_master_tb);
+end
+
+// Clock
+initial begin
+    clk = 0;
+    forever #5 clk = ~clk;
+end
+
+// Stimulus
+initial begin
+
+    rst = 1;
+    start = 0;
+    data_in = 8'hA5;
+
+    #20;
+
+    rst = 0;
+
+    #10;
+
+    start = 1;
+
+    #10;
+
+    start = 0;
+
+    #250;
+
+    $finish;
+
+end
+
+// Monitor
+initial begin
+    $monitor("Time=%0t CS=%b SCLK=%b MOSI=%b Busy=%b",
+              $time, cs, sclk, mosi, busy);
+end
+
+endmodule
+
+
+
+RESULT:-
+
+[2026-07-15 16:45:15 UTC] iverilog '-Wall' '-g2012' design.sv testbench.sv  && unbuffer vvp a.out  
+warning: Some design elements have no explicit time unit and/or
+       : time precision. This may cause confusing timing results.
+       : Affected design elements are:
+       :   -- module spi_master declared here: design.sv:1
+VCD info: dumpfile spi_master.vcd opened for output.
+Time=0 CS=x SCLK=x MOSI=x Busy=x
+Time=5000 CS=1 SCLK=0 MOSI=0 Busy=0
+Time=35000 CS=0 SCLK=0 MOSI=0 Busy=1
+Time=45000 CS=0 SCLK=1 MOSI=1 Busy=1
+Time=55000 CS=0 SCLK=0 MOSI=1 Busy=1
+Time=65000 CS=0 SCLK=1 MOSI=0 Busy=1
+Time=75000 CS=0 SCLK=0 MOSI=0 Busy=1
+Time=85000 CS=0 SCLK=1 MOSI=1 Busy=1
+Time=95000 CS=0 SCLK=0 MOSI=1 Busy=1
+Time=105000 CS=0 SCLK=1 MOSI=0 Busy=1
+Time=115000 CS=0 SCLK=0 MOSI=0 Busy=1
+Time=125000 CS=0 SCLK=1 MOSI=0 Busy=1
+Time=135000 CS=0 SCLK=0 MOSI=0 Busy=1
+Time=145000 CS=0 SCLK=1 MOSI=1 Busy=1
+Time=155000 CS=0 SCLK=0 MOSI=1 Busy=1
+Time=165000 CS=0 SCLK=1 MOSI=0 Busy=1
+Time=175000 CS=0 SCLK=0 MOSI=0 Busy=1
+Time=185000 CS=1 SCLK=0 MOSI=1 Busy=0
+testbench.sv:59: $finish called at 290000 (1ps)
+Finding VCD file...
+./spi_master.vcd
+[2026-07-15 16:45:16 UTC] Opening EPWave...
+Done
