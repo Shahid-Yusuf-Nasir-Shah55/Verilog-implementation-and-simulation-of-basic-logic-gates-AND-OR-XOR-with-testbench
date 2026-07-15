@@ -1,0 +1,297 @@
+VERILOG CODE:-
+module i2c_master(
+
+input clk,
+input rst,
+input start,
+
+input [6:0] slave_addr,
+input [7:0] data,
+
+output reg scl,
+output reg sda,
+output reg busy
+
+);
+
+
+reg [3:0] state;
+reg [7:0] shift_reg;
+reg [3:0] bit_count;
+
+
+parameter IDLE  = 0;
+parameter START = 1;
+parameter SEND  = 2;
+parameter STOP  = 3;
+
+
+always @(posedge clk)
+begin
+
+
+if(rst)
+begin
+
+scl <= 1;
+sda <= 1;
+busy <=0;
+
+state <= IDLE;
+
+end
+
+
+else
+begin
+
+
+case(state)
+
+
+
+IDLE:
+begin
+
+scl <=1;
+sda <=1;
+
+
+if(start)
+begin
+
+busy<=1;
+
+shift_reg <= {slave_addr,1'b0};
+
+bit_count<=7;
+
+state<=START;
+
+end
+
+end
+
+
+
+START:
+begin
+
+sda<=0;
+
+state<=SEND;
+
+end
+
+
+
+SEND:
+begin
+
+
+scl<=~scl;
+
+
+if(scl==0)
+begin
+
+
+sda<=shift_reg[bit_count];
+
+
+if(bit_count==0)
+begin
+
+state<=STOP;
+
+end
+
+else
+
+bit_count<=bit_count-1;
+
+
+end
+
+end
+
+
+
+STOP:
+begin
+
+
+scl<=1;
+
+sda<=1;
+
+busy<=0;
+
+state<=IDLE;
+
+
+end
+
+
+
+endcase
+
+
+end
+
+
+end
+
+
+endmodule
+
+
+TESTBENCH:-
+
+TESTBENCH:-
+
+`timescale 1ns/1ps
+
+
+module i2c_master_tb;
+
+
+reg clk;
+reg rst;
+reg start;
+
+reg [6:0] slave_addr;
+reg [7:0] data;
+
+
+wire scl;
+wire sda;
+wire busy;
+
+
+
+i2c_master uut(
+
+.clk(clk),
+.rst(rst),
+.start(start),
+
+.slave_addr(slave_addr),
+.data(data),
+
+.scl(scl),
+.sda(sda),
+.busy(busy)
+
+);
+
+
+
+initial
+begin
+
+$dumpfile("i2c.vcd");
+
+$dumpvars(0,i2c_master_tb);
+
+end
+
+
+
+initial
+begin
+
+clk=0;
+
+forever #5 clk=~clk;
+
+end
+
+
+
+initial
+begin
+
+
+rst=1;
+
+start=0;
+
+slave_addr=7'b1010000;
+
+data=8'h55;
+
+
+#20;
+
+
+rst=0;
+
+
+#20;
+
+
+start=1;
+
+
+#10;
+
+
+start=0;
+
+
+#300;
+
+
+$finish;
+
+
+end
+
+
+
+initial
+begin
+
+$monitor("Time=%0t SCL=%b SDA=%b BUSY=%b",
+$time,scl,sda,busy);
+
+end
+
+
+endmodule
+
+RESULT:-
+
+[2026-07-15 17:03:45 UTC] iverilog '-Wall' '-g2012' design.sv testbench.sv  && unbuffer vvp a.out  
+warning: Some design elements have no explicit time unit and/or
+       : time precision. This may cause confusing timing results.
+       : Affected design elements are:
+       :   -- module i2c_master declared here: design.sv:1
+VCD info: dumpfile i2c.vcd opened for output.
+Time=0 SCL=x SDA=x BUSY=x
+Time=5000 SCL=1 SDA=1 BUSY=0
+Time=45000 SCL=1 SDA=1 BUSY=1
+Time=55000 SCL=1 SDA=0 BUSY=1
+Time=65000 SCL=0 SDA=0 BUSY=1
+Time=75000 SCL=1 SDA=1 BUSY=1
+Time=85000 SCL=0 SDA=1 BUSY=1
+Time=95000 SCL=1 SDA=0 BUSY=1
+Time=105000 SCL=0 SDA=0 BUSY=1
+Time=115000 SCL=1 SDA=1 BUSY=1
+Time=125000 SCL=0 SDA=1 BUSY=1
+Time=135000 SCL=1 SDA=0 BUSY=1
+Time=145000 SCL=0 SDA=0 BUSY=1
+Time=155000 SCL=1 SDA=0 BUSY=1
+Time=165000 SCL=0 SDA=0 BUSY=1
+Time=175000 SCL=1 SDA=0 BUSY=1
+Time=185000 SCL=0 SDA=0 BUSY=1
+Time=195000 SCL=1 SDA=0 BUSY=1
+Time=205000 SCL=0 SDA=0 BUSY=1
+Time=215000 SCL=1 SDA=0 BUSY=1
+Time=225000 SCL=1 SDA=1 BUSY=0
+testbench.sv:94: $finish called at 350000 (1ps)
+Finding VCD file...
+./i2c.vcd
+[2026-07-15 17:03:46 UTC] Opening EPWave...
+Done
