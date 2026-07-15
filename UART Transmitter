@@ -1,0 +1,157 @@
+verilog code:-
+
+module uart_tx(
+    input clk,
+    input rst,
+    input start,
+    input [7:0] data_in,
+
+    output reg tx,
+    output reg busy
+);
+
+reg [3:0] bit_count;
+reg [9:0] shift_reg;
+
+always @(posedge clk) begin
+
+    if(rst) begin
+        tx <= 1;
+        busy <= 0;
+        bit_count <= 0;
+    end
+
+    else begin
+
+        if(start && !busy) begin
+
+            busy <= 1;
+
+            shift_reg <= {1'b1, data_in, 1'b0};
+
+            bit_count <= 0;
+
+        end
+
+        else if(busy) begin
+
+            tx <= shift_reg[0];
+
+            shift_reg <= shift_reg >> 1;
+
+            bit_count <= bit_count + 1;
+
+            if(bit_count == 9) begin
+
+                busy <= 0;
+
+                tx <= 1;
+
+            end
+
+        end
+
+    end
+
+end
+
+endmodule
+
+
+
+testbench:-
+
+`timescale 1ns/1ps
+
+module uart_tx_tb;
+
+reg clk;
+reg rst;
+reg start;
+reg [7:0] data_in;
+
+wire tx;
+wire busy;
+
+uart_tx uut(
+    .clk(clk),
+    .rst(rst),
+    .start(start),
+    .data_in(data_in),
+    .tx(tx),
+    .busy(busy)
+);
+
+// Waveform
+initial begin
+    $dumpfile("uart_tx.vcd");
+    $dumpvars(0, uart_tx_tb);
+end
+
+// Clock
+initial begin
+    clk = 0;
+    forever #5 clk = ~clk;
+end
+
+// Test
+initial begin
+
+    rst = 1;
+    start = 0;
+    data_in = 8'hA5;
+
+    #20;
+
+    rst = 0;
+
+    #10;
+
+    start = 1;
+
+    #10;
+
+    start = 0;
+
+    #150;
+
+    $finish;
+
+end
+
+// Monitor
+initial begin
+    $monitor("Time=%0t start=%b busy=%b tx=%b",
+             $time,start,busy,tx);
+end
+
+endmodule
+
+
+result:-
+
+[2026-07-15 16:20:08 UTC] iverilog '-Wall' '-g2012' design.sv testbench.sv  && unbuffer vvp a.out  
+warning: Some design elements have no explicit time unit and/or
+       : time precision. This may cause confusing timing results.
+       : Affected design elements are:
+       :   -- module uart_tx declared here: design.sv:1
+VCD info: dumpfile uart_tx.vcd opened for output.
+Time=0 start=0 busy=x tx=x
+Time=5000 start=0 busy=0 tx=1
+Time=30000 start=1 busy=0 tx=1
+Time=35000 start=1 busy=1 tx=1
+Time=40000 start=0 busy=1 tx=1
+Time=45000 start=0 busy=1 tx=0
+Time=55000 start=0 busy=1 tx=1
+Time=65000 start=0 busy=1 tx=0
+Time=75000 start=0 busy=1 tx=1
+Time=85000 start=0 busy=1 tx=0
+Time=105000 start=0 busy=1 tx=1
+Time=115000 start=0 busy=1 tx=0
+Time=125000 start=0 busy=1 tx=1
+Time=135000 start=0 busy=0 tx=1
+testbench.sv:55: $finish called at 190000 (1ps)
+Finding VCD file...
+./uart_tx.vcd
+[2026-07-15 16:20:09 UTC] Opening EPWave...
+Done
