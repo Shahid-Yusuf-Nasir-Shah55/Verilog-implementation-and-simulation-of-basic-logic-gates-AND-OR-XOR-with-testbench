@@ -1,0 +1,201 @@
+VERILOG CODE:-
+
+module spi_slave(
+
+    input sclk,
+    input cs,
+    input mosi,
+
+    output reg [7:0] rx_data,
+    output reg data_ready
+
+);
+
+reg [7:0] shift_reg;
+reg [2:0] bit_count;
+
+
+always @(posedge sclk) begin
+
+    if(cs) begin
+
+        bit_count <= 0;
+        data_ready <= 0;
+
+    end
+
+    else begin
+
+        shift_reg <= {shift_reg[6:0],mosi};
+
+        bit_count <= bit_count + 1;
+
+
+        if(bit_count == 7) begin
+
+            rx_data <= {shift_reg[6:0],mosi};
+
+            data_ready <= 1;
+
+            bit_count <= 0;
+
+        end
+
+        else begin
+
+            data_ready <= 0;
+
+        end
+
+    end
+
+end
+
+
+endmodule
+
+
+TESTBENCH:-
+
+`timescale 1ns/1ps
+
+module spi_slave_tb;
+
+
+reg sclk;
+reg cs;
+reg mosi;
+
+wire [7:0] rx_data;
+wire data_ready;
+
+
+spi_slave uut(
+
+.sclk(sclk),
+.cs(cs),
+.mosi(mosi),
+
+.rx_data(rx_data),
+.data_ready(data_ready)
+
+);
+
+
+// Waveform
+
+initial begin
+
+$dumpfile("spi_slave.vcd");
+
+$dumpvars(0,spi_slave_tb);
+
+end
+
+
+
+task send_bit(input b);
+
+begin
+
+mosi=b;
+
+#5;
+
+sclk=1;
+
+#5;
+
+sclk=0;
+
+end
+
+endtask
+
+
+
+initial begin
+
+
+sclk=0;
+
+cs=1;
+
+mosi=0;
+
+
+#20;
+
+
+// Enable slave
+
+cs=0;
+
+
+// Send 10100101
+
+send_bit(1);
+
+send_bit(0);
+
+send_bit(1);
+
+send_bit(0);
+
+send_bit(0);
+
+send_bit(1);
+
+send_bit(0);
+
+send_bit(1);
+
+
+// Disable slave
+
+cs=1;
+
+
+#20;
+
+
+$finish;
+
+
+end
+
+
+
+initial begin
+
+$monitor("Time=%0t CS=%b MOSI=%b RX=%h READY=%b",
+$time,cs,mosi,rx_data,data_ready);
+
+end
+
+
+endmodule
+
+RESULT:-
+
+[2026-07-15 16:59:43 UTC] iverilog '-Wall' '-g2012' design.sv testbench.sv  && unbuffer vvp a.out  
+warning: Some design elements have no explicit time unit and/or
+       : time precision. This may cause confusing timing results.
+       : Affected design elements are:
+       :   -- module spi_slave declared here: design.sv:1
+VCD info: dumpfile spi_slave.vcd opened for output.
+Time=0 CS=1 MOSI=0 RX=xx READY=x
+Time=20000 CS=0 MOSI=1 RX=xx READY=x
+Time=25000 CS=0 MOSI=1 RX=xx READY=0
+Time=30000 CS=0 MOSI=0 RX=xx READY=0
+Time=40000 CS=0 MOSI=1 RX=xx READY=0
+Time=50000 CS=0 MOSI=0 RX=xx READY=0
+Time=70000 CS=0 MOSI=1 RX=xx READY=0
+Time=80000 CS=0 MOSI=0 RX=xx READY=0
+Time=90000 CS=0 MOSI=1 RX=xx READY=0
+Time=100000 CS=1 MOSI=1 RX=xx READY=0
+testbench.sv:103: $finish called at 120000 (1ps)
+Finding VCD file...
+./spi_slave.vcd
+[2026-07-15 16:59:44 UTC] Opening EPWave...
+Done
