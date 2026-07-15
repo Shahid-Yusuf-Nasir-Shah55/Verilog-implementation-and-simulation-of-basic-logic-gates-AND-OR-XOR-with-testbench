@@ -1,0 +1,97 @@
+testbench:-
+
+`timescale 1ns/1ps
+
+module counter_tb;
+
+reg clk;
+reg rst;
+reg en;
+
+wire [7:0] count;
+
+counter uut(
+    .clk(clk),
+    .rst(rst),
+    .en(en),
+    .count(count)
+);
+
+// Waveform generation
+initial begin
+    $dumpfile("counter.vcd");
+    $dumpvars(0,counter_tb);
+end
+
+// Clock generation (10 ns period)
+initial begin
+    clk = 0;
+    forever #5 clk = ~clk;
+end
+
+// Test sequence
+initial begin
+
+    rst = 1;
+    en  = 0;
+
+    #15;
+
+    rst = 0;
+    en  = 1;
+
+    #80;
+
+    en = 0;
+
+    #20;
+
+    en = 1;
+
+    #40;
+
+    rst = 1;
+
+    #10;
+
+    rst = 0;
+
+    #20;
+
+    $finish;
+
+end
+
+// Monitor values
+initial begin
+    $display("Time\tclk\trst\ten\tcount");
+    $monitor("%0t\t%b\t%b\t%b\t%d",
+             $time,clk,rst,en,count);
+end
+
+endmodule
+
+
+
+verilog code:-
+module counter(
+    input clk,
+    input rst,
+    input en,
+    output reg [7:0] count
+);
+
+always @(posedge clk) begin
+
+    if(rst)
+        count <= 8'd0;
+
+    else if(en)
+        count <= count + 1;
+
+    else
+        count <= count;
+
+end
+
+endmodule
